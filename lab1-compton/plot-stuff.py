@@ -26,7 +26,7 @@ sketch_data = {30, 60, 70}
 angles = list(data.keys())
 
 def correct_sys_error(eprime):
-    return eprime * 1.4
+    return eprime * 1.45
 
 def degrees_to_radians(degrees):
     return degrees * (np.pi / 180.0)
