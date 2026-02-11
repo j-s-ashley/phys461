@@ -109,10 +109,41 @@ y_act = np.array([data[a] for a in angles], dtype=float)
 plt.figure()
 
 act_err = np.array([std_dev_from_fwhm(full_w_half_max[a]) for a in angles], dtype=float) # get error
-plt.errorbar(x_exp, y_act, yerr=act_err, marker='.', color='orange', linestyle='none', label="Actual scattered energies")
+plt.errorbar(x_exp, y_act, yerr=act_err, marker='.', color='green', linestyle='none', label="Actual scattered energies")
 plt.scatter(x_exp, y_exp, marker='.', color='blue', label="Expected scattered energies")
 plt.xlabel(r"Angle [$\degree$]")
 plt.ylabel("Energy [keV]")
 plt.legend()
 plt.grid(True)
 plt.savefig("angle_vs_expected_energies.png", dpi=200)
+
+# ---------- Compare expected and corrected measured energies ----------
+x_exp = np.array([a for a in angles], dtype=float)
+y_exp = np.array([expected_e_from_angle(a) for a in angles], dtype=float)
+y_act = np.array([data[a] for a in angles], dtype=float)
+
+# corrected y-values only for sketch angles
+y_cor = np.array([
+    correct_sys_error(data[a]) if a in sketch_data else data[a]
+    for a in angles
+], dtype=float)
+
+mask = np.array([a in sketch_data for a in angles])
+
+cor_e_err = np.array([
+    correct_sys_error(std_dev_from_fwhm(full_w_half_max[a]))
+    for a in angles
+], dtype=float)
+
+plt.figure()
+
+act_err = np.array([std_dev_from_fwhm(full_w_half_max[a]) for a in angles], dtype=float) # get error
+plt.errorbar(x_exp[~mask], y_exp[~mask], yerr=act_err[~mask], marker='.', color='green', linestyle='none', label="Actual scattered energies")
+plt.errorbar(x_exp[mask],  y_cor[mask], yerr=cor_e_err[mask], marker='.', color='orange', linestyle='none', label="Corrected scattered energies")
+
+plt.scatter(x_exp, y_exp, marker='.', color='blue', label="Expected scattered energies")
+plt.xlabel(r"Angle [$\degree$]")
+plt.ylabel("Energy [keV]")
+plt.legend()
+plt.grid(True)
+plt.savefig("angle_vs_expected_energies_cor.png", dpi=200)
