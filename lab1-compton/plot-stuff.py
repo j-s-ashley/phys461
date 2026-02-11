@@ -12,6 +12,16 @@ data = {
     100: 278.902,
     110: 250.281,
 }
+
+full_w_half_max = {
+    10: 8.108,
+    30: 22.29,
+    60: 20,
+    70: 13.314,
+    100: 16.183,
+    110: 13.556,
+}
+
 sketch_data = {30, 60, 70}
 angles = list(data.keys())
 
@@ -28,6 +38,14 @@ def x_from_angle(deg):                 # x-axis quantity
 def y_from_eprime(eprime):             # y-axis quantity
     return (1.0 / eprime) - (1.0 / e)  # 1/E' - 1/E
 
+def std_dev_from_fwhm(fwhm):
+    ln2 = np.log(2)
+    den = 2 * np.sqrt(2 * ln2)
+    return fwhm / den
+
+def y_error(eprime, sigma):
+	return sigma / (eprime*eprime)
+
 def expected_e_from_angle(angle):
     one_less_cos_a = x_from_angle(angle)
     denominator    = 1/e0 * one_less_cos_a + 1/e
@@ -40,7 +58,13 @@ y_raw = np.array([y_from_eprime(data[a]) for a in angles], dtype=float)
 m_raw, b_raw = np.polyfit(x_raw, y_raw, 1)
 
 plt.figure()
-plt.scatter(x_raw, y_raw, label="Original data")
+
+raw_err = np.array([
+    y_error(data[a], std_dev_from_fwhm(full_w_half_max[a]))
+    for a in angles
+], dtype=float)
+
+plt.errorbar(x_raw, y_raw, yerr=raw_err, marker='.', color='blue', linestyle='none', label="Original data")
 plt.plot(x_raw, m_raw * x_raw + b_raw, "g--", label=f"Fit: y = {m_raw:.4g}x + {b_raw:.4g}")
 plt.xlabel(r"$1 - \cos(\theta)$")
 plt.ylabel(r"$1/E' - 1/E$ [1/keV]")
@@ -62,8 +86,13 @@ m_corr, b_corr = np.polyfit(x_corr, y_corr, 1)
 plt.figure()
 mask = np.array([a in sketch_data for a in angles])
 
-plt.scatter(x_corr[~mask], y_corr[~mask], label="Uncorrected points")
-plt.scatter(x_corr[mask],  y_corr[mask],  label="Corrected points")
+cor_err = np.array([
+    correct_sys_error(y_error(data[a], std_dev_from_fwhm(full_w_half_max[a])))
+    for a in angles
+], dtype=float)
+
+plt.errorbar(x_corr[~mask], y_corr[~mask], yerr=raw_err[~mask], marker='.', color='blue', linestyle='none', label="Uncorrected points")
+plt.errorbar(x_corr[mask],  y_corr[mask], yerr=cor_err[mask], marker='.', color='orange', linestyle='none', label="Corrected points")
 plt.plot(x_corr, m_corr * x_corr + b_corr, "g--", label=f"Fit: y = {m_corr:.4g}x + {b_corr:.4g}")
 
 plt.xlabel(r"$1 - \cos(\theta)$")
@@ -72,14 +101,16 @@ plt.legend()
 plt.grid(True)
 plt.savefig("cr_data.png", dpi=200)
 
-# ---------- Plot all data as-is ----------
+# ---------- Compare expected and measured energies ----------
 x_exp = np.array([a for a in angles], dtype=float)
 y_exp = np.array([expected_e_from_angle(a) for a in angles], dtype=float)
 y_act = np.array([data[a] for a in angles], dtype=float)
 
 plt.figure()
-plt.scatter(x_exp, y_exp, label="Expected scattered energies")
-plt.scatter(x_exp, y_act, label="Actual scattered energies")
+
+act_err = np.array([std_dev_from_fwhm(full_w_half_max[a]) for a in angles], dtype=float) # get error
+plt.errorbar(x_exp, y_act, yerr=act_err, marker='.', color='orange', linestyle='none', label="Actual scattered energies")
+plt.scatter(x_exp, y_exp, marker='.', color='blue', label="Expected scattered energies")
 plt.xlabel(r"Angle [$\degree$]")
 plt.ylabel("Energy [keV]")
 plt.legend()
