@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-e = 662.0  # keV
+e  = 662.0 # cesium-137 gamma ray [keV]
+e0 = 511.0 # rest energy of electron [keV]
 
 data = {
     10: 646.411,
@@ -26,6 +27,11 @@ def x_from_angle(deg):                 # x-axis quantity
 
 def y_from_eprime(eprime):             # y-axis quantity
     return (1.0 / eprime) - (1.0 / e)  # 1/E' - 1/E
+
+def expected_e_from_angle(angle):
+    one_less_cos_a = x_from_angle(angle)
+    denominator    = 1/e0 * one_less_cos_a + 1/e
+    return 1 / denominator
 
 # ---------- Plot all data as-is ----------
 x_raw = np.array([x_from_angle(a) for a in angles], dtype=float)
@@ -65,3 +71,17 @@ plt.ylabel(r"$1/E' - 1/E$ [1/keV]")
 plt.legend()
 plt.grid(True)
 plt.savefig("cr_data.png", dpi=200)
+
+# ---------- Plot all data as-is ----------
+x_exp = np.array([a for a in angles], dtype=float)
+y_exp = np.array([expected_e_from_angle(a) for a in angles], dtype=float)
+y_act = np.array([data[a] for a in angles], dtype=float)
+
+plt.figure()
+plt.scatter(x_exp, y_exp, label="Expected scattered energies")
+plt.scatter(x_exp, y_act, label="Actual scattered energies")
+plt.xlabel(r"Angle [$\degree$]")
+plt.ylabel("Energy [keV]")
+plt.legend()
+plt.grid(True)
+plt.savefig("angle_vs_expected_energies.png", dpi=200)
