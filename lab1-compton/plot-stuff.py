@@ -138,7 +138,7 @@ cor_e_err = np.array([
 plt.figure()
 
 act_err = np.array([std_dev_from_fwhm(full_w_half_max[a]) for a in angles], dtype=float) # get error
-plt.errorbar(x_exp[~mask], y_exp[~mask], yerr=act_err[~mask], marker='.', color='green', linestyle='none', label="Actual scattered energies")
+plt.errorbar(x_exp[~mask], y_act[~mask], yerr=act_err[~mask], marker='.', color='green', linestyle='none', label="Actual scattered energies")
 plt.errorbar(x_exp[mask],  y_cor[mask], yerr=cor_e_err[mask], marker='.', color='orange', linestyle='none', label="Corrected scattered energies")
 
 plt.scatter(x_exp, y_exp, marker='.', color='blue', label="Expected scattered energies")
